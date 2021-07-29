@@ -1,7 +1,8 @@
 const Friends = () => {
     return (
         <div className='friends'>
-            friends
+            <div className='addFriend'>create room</div>
+            <div className='friendList'>rooms</div>
         </div>
     )
 }
