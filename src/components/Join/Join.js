@@ -18,14 +18,14 @@ const Join = ({ logIn }) => {
         sendCredentials('/login', { password: pass, email })
             .then(data => data.json())
             .then(data => data.errorList ? setErrors(data.errorList) : logIn(data.username, data.email))
-            .catch(err => console.log(err, 'error'))
+            .catch(err => console.log(err.name + ': ' + err.message))
     }
 
     const handleSignIn = () => {
         sendCredentials('/signIn', { username: name, password: pass, email })
             .then(data => data.json())
             .then(data => data.errorList ? setErrors(data.errorList) : toggleAction())
-            .catch(err => console.log(err, 'error'))
+            .catch(err => console.log(err.name + ': ' + err.message))
     }
 
     return (

@@ -19,15 +19,12 @@ const App = () => {
         setEmail('');
     }
 
-    const click = () => console.log(email, username)
     return (
         <div>
             {email && username ?
                 <Chat logOut={logOut} username={username} /> :
                 <Join logIn={logIn} />
             }
-            <button onClick={click}>console</button>
-
         </div>
     )
 };
