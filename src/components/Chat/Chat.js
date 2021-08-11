@@ -1,88 +1,109 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
-
-import './Chat.css'
-import Friends from './Friends.js'
-import Rooms from './Rooms.js'
+import './Chat.css';
+import Friends from './Friends.js';
+import RoomList from './Rooms.js';
+import Modal from './Modal.js';
 
 
 let socket;
-const Chat = ({ logOut, username }) => {
+const Chat = ({ logOut, username, messages, setMessages, rooms, setRooms, activeChannel, setActiveChannel, id }) => {
     const [message, setMessage] = useState('')
-    const [messages, setMessages] = useState([]);
-    const [rooms, setRooms] = useState([]);
-    const [activeChannel, setActiveChannel] = useState({messages:[]});
-
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalAction, setModalAction] = useState('create_room');
     const ENDPOINT = 'http://localhost:80';
 
-    useEffect(() => {
-        setMessages(activeChannel.messages)
-    }, [activeChannel])
-
-    useEffect(() => {
-        socket = io(ENDPOINT);
-        socket.emit('join', () => {
-
-        })
-
-        return () => {
-            socket.disconnect();
-            socket.off();
-        }
-    }, [ENDPOINT])
-
-
-    useEffect(() => {
-        socket.on('initialize', data => {
-            console.log(data);
-            setRooms(data.rooms);
-            let publicRoom = data.rooms.find(room => room.public)
-            setActiveChannel(publicRoom);
-        })
-
-        socket.emit('initialize', username)
-
-        socket.on('message', message => {
-            setMessages([...messages, message]);
-            console.log('incoming message: ' + message)
-        })
-
-    }, [])
-
+    const messagesEndRef = useRef(null)
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }
+    
     const sendMessage = (e) => {
         e.preventDefault();
-        setMessages([...messages, message]);
         if (message) {
-            socket.emit('message', {
+            const newMessage = {
                 text: message,
                 author: username,
                 room: activeChannel._id,
                 directChannel: activeChannel.directChannel
-            }, () => setMessage(''));
+            }
+            console.log(newMessage)
+            socket.emit('message', newMessage, response => {
+                setMessage('')
+                if (response.status === 'error') console.log(response);
+            });
         }
     }
+  
+    useEffect(() => {
+        socket = io(ENDPOINT);
+    }, [ENDPOINT])
+    
+    useEffect(() => {
+        scrollToBottom()
+    }, [messages]);
+    
+    useEffect(() => {
+        setMessages([...activeChannel.messages])
+    }, [activeChannel])
+    
+    useEffect(() => {
+        console.log('INITIALIZE')
+        socket.emit('initialize', { rooms, id })
+        return () => {
+            socket.disconnect();
+            socket.off();
+        }
+    }, [])
+    
+    useEffect(() => {
+        socket.on('newRoom', response => {
+            setRooms(rooms => [...rooms, response.room])
+        })
+        socket.on('message', newMessage => {
+            const room = rooms.find(room => room._id === newMessage.room);
+            room.messages.push(newMessage);
+            if (activeChannel._id === newMessage.room){
+                setMessages(mssgs => [...mssgs, newMessage]);
+            }
+        })
+        return () => {
+            socket.removeAllListeners("newRoom");
+            socket.removeAllListeners("message");
+        }
+    }, [rooms, activeChannel])
 
-    const clickAR = () => console.log(activeChannel)
-    const clickM = () => console.log(messages);
 
     return (
         <div className="outer">
-            <button onClick={clickAR}>active channel</button>
-            <button onClick={clickM}>messages</button>
+
+            {modalOpen ?
+                <Modal
+                    id={id}
+                    username={username}
+                    socket={socket}
+                    modalAction={modalAction}
+                    setModalOpen={setModalOpen}
+                /> :
+                null
+            }
             <div className='chat'>
                 <Friends />
                 <div className="centerChat">
                     <div className="myName">
-                        <div className='username'>{username}</div>
-                        <div>{activeChannel.users} </div>
+                        <div className='username'>{'username: ' + username}</div>
+                        <div>{'room:' + activeChannel.name}</div>
                         <button onClick={logOut}>log out</button>
                     </div>
-                    <div className="allText">
-                        {messages.map(message => (
-                            <div>
-                                {message.text + ' ' + `[${message.author}]` }
-                            </div>
-                        ))}
+                    <div className='allTextWrapper'>
+                        <div className="allText">
+                            {messages.map(message => (
+                                <div key={message._id}>
+                                    {message.text + ' ' + `[${message.author}]`}
+                                </div>
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </div>
                     </div>
                     <div className="myText">
                         <input
@@ -92,9 +113,9 @@ const Chat = ({ logOut, username }) => {
                         />
                     </div>
                 </div>
-                <Rooms rooms={rooms} />
+                <RoomList rooms={rooms} setActiveChannel={setActiveChannel} />
             </div>
-        </div>
+        </div >
     )
 }
 

@@ -17,7 +17,7 @@ const Join = ({ logIn }) => {
     const handleLogin = () => {
         sendCredentials('/login', { password: pass, email })
             .then(data => data.json())
-            .then(data => data.errorList ? setErrors(data.errorList) : logIn(data.username, data.email))
+            .then(data => data.errorList ? setErrors(data.errorList) : logIn(data))
             .catch(err => console.log(err.name + ': ' + err.message))
     }
 
