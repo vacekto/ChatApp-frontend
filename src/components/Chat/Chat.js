@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import './Chat.css';
-import Friends from './Friends.js';
+import UsersInRoom from './UsersInRoom.js';
 import RoomList from './Rooms.js';
 import Modal from './Modal.js';
 
@@ -17,7 +17,7 @@ const Chat = ({ logOut, username, messages, setMessages, rooms, setRooms, active
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
     }
-    
+
     const sendMessage = (e) => {
         e.preventDefault();
         if (message) {
@@ -34,28 +34,29 @@ const Chat = ({ logOut, username, messages, setMessages, rooms, setRooms, active
             });
         }
     }
-  
+
     useEffect(() => {
         socket = io(ENDPOINT);
     }, [ENDPOINT])
-    
+
     useEffect(() => {
         scrollToBottom()
     }, [messages]);
-    
+
     useEffect(() => {
         setMessages([...activeChannel.messages])
     }, [activeChannel])
-    
+
     useEffect(() => {
         console.log('INITIALIZE')
+        console.log(rooms, id)
         socket.emit('initialize', { rooms, id })
         return () => {
             socket.disconnect();
             socket.off();
         }
     }, [])
-    
+
     useEffect(() => {
         socket.on('newRoom', response => {
             setRooms(rooms => [...rooms, response.room])
@@ -63,7 +64,7 @@ const Chat = ({ logOut, username, messages, setMessages, rooms, setRooms, active
         socket.on('message', newMessage => {
             const room = rooms.find(room => room._id === newMessage.room);
             room.messages.push(newMessage);
-            if (activeChannel._id === newMessage.room){
+            if (activeChannel._id === newMessage.room) {
                 setMessages(mssgs => [...mssgs, newMessage]);
             }
         })
@@ -76,7 +77,6 @@ const Chat = ({ logOut, username, messages, setMessages, rooms, setRooms, active
 
     return (
         <div className="outer">
-
             {modalOpen ?
                 <Modal
                     id={id}
@@ -88,12 +88,16 @@ const Chat = ({ logOut, username, messages, setMessages, rooms, setRooms, active
                 null
             }
             <div className='chat'>
-                <Friends />
+                <RoomList
+                    setModalOpen={setModalOpen}
+                    rooms={rooms.filter(room => !room.directChannel)}
+                    setActiveChannel={setActiveChannel}
+                />
                 <div className="centerChat">
                     <div className="myName">
+                        <button onClick={logOut}>log out</button>
                         <div className='username'>{'username: ' + username}</div>
                         <div>{'room:' + activeChannel.name}</div>
-                        <button onClick={logOut}>log out</button>
                     </div>
                     <div className='allTextWrapper'>
                         <div className="allText">
@@ -113,7 +117,7 @@ const Chat = ({ logOut, username, messages, setMessages, rooms, setRooms, active
                         />
                     </div>
                 </div>
-                <RoomList rooms={rooms} setActiveChannel={setActiveChannel} />
+                <UsersInRoom users={activeChannel.users} />
             </div>
         </div >
     )

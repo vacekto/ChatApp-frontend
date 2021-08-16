@@ -11,18 +11,6 @@ const Modal = ({ socket, modalAction, setModalOpen, username, id }) => {
         if (usernameSearch) fetchUsers()
     }, [usernameSearch])
 
-    const fetchUsers = () => {
-        if (timer) clearTimeout(timer);
-        setTimer(setTimeout(() => {
-            socket.emit('searchForUser', usernameSearch, result => {
-                if (result.status === 'ok') {
-                    const data = result.data.filter(user => user.username !== username)
-                    setOptions(data)
-                }
-                else console.error(result.error)
-            })
-        }, 200))
-    };
 
     const addToRoom = () => {
         let user = options.find(user => user.username === usernameSearch)
@@ -37,10 +25,24 @@ const Modal = ({ socket, modalAction, setModalOpen, username, id }) => {
         }
     }
 
+    const fetchUsers = () => {
+        if (timer) clearTimeout(timer);
+        setTimer(setTimeout(() => {
+            socket.emit('searchForUser', usernameSearch, result => {
+                if (result.status === 'ok') {
+                    const data = result.data.filter(user => user.username !== username)
+                    setOptions(data)
+                }
+                else console.error(result.error)
+            })
+        }, 200))
+    };
+
     return (
-        <div className='modalBackground' onClick={() => setModalOpen(false)}>
+        <div className='modalBackground'>
             <div className="modalWrapper">
                 <div className='modal' onClick={e => e.stopPropagation()}>
+                    <div className='pointer X' onClick={() => setModalOpen(false)}>X</div>
                     <h3>Create room</h3>
                     <div className="modalUsers">
                         <div className="modalUsersInput">

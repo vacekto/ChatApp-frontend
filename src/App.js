@@ -14,6 +14,7 @@ const App = () => {
     const [id, setId] = useState('');
 
     const logIn = (data) => {
+        console.log(data)
         let publicRoom = data.rooms.find(room => room.public);
         setActiveChannel({ ...publicRoom });
         setMessages([...publicRoom.messages]);
@@ -28,7 +29,8 @@ const App = () => {
         setEmail('');
         setMessages([]);
         setRooms([]);
-        setActiveChannel({ messages: [] })
+        setActiveChannel({ messages: [] });
+        setId('');
     }
 
     return (
